@@ -1,0 +1,88 @@
+include:
+  - nebula-dockercompose.yml
+
+networks:
+  capstone-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  chromadb_data:
+  nebula_data:
+
+services:
+  mysql:
+    image: mysql:9.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: capstone
+    networks:
+      - capstone-net
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - '3306:3306'
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 55
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+    networks:
+      - capstone-net
+    ports:
+      - '8080:80'
+
+  chromadb:
+    image: chromadb/chroma@sha256:845b3b13ee216210559922dc7b075ed8bcc88e8fbe80f8b66d61e0e61df4929f
+    container_name: chromadb
+    restart: always
+    networks:
+      - capstone-net
+    volumes:
+      - chromadb_data:/chroma/chroma
+    ports:
+      - '8000:8000'
+    environment:
+      CHROMA_SERVER_AUTHN_PROVIDER: chromadb.auth.token_authn.TokenAuthenticationServerProvider
+      CHROMA_SERVER_AUTHN_CREDENTIALS: ${CHROMA_TOKEN}
+      IS_PERSISTENT: true
+      ANONYMIZED_TELEMETRY: false
+
+  application:
+    image: legacy107/capstone:latest
+    container_name: capstone
+    restart: always
+    networks:
+      - capstone-net
+    ports:
+      - '80:8080'
+    depends_on:
+      mysql:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+      nebula-console:
+        condition: service_started
+    environment:
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      DB_CONNECTION_SYNC: mysql://root:${MYSQL_PASSWORD}@mysql:3306/capstone
+      DB_CONNECTION: mysql+asyncmy://root:${MYSQL_PASSWORD}@mysql:3306/capstone
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: 8000
+      CHROMA_TOKEN: ${CHROMA_TOKEN}
+      NEBULA_USER: root
+      NEBULA_PASSWORD: nebula
+      NEBULA_ADDRESS: graphd:9669

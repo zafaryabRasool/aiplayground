@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": [
+        "./backend/src/prompts/templates",
+        "./backend/src/llm",
+        "./backend/src/prompts/techniques"
+    ]
+}
