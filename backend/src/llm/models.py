@@ -5,7 +5,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from llama_index.core.base.embeddings.base import BaseEmbedding
-from llama_index.embeddings.gemini import GeminiEmbedding
+# from llama_index.embeddings.gemini import GeminiEmbedding
 from llama_index.embeddings.openai import (
     OpenAIEmbedding,
     OpenAIEmbeddingModelType,
